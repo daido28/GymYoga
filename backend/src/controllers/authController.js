@@ -3,6 +3,11 @@ const jwt = require("jsonwebtoken");
 const { sql, poolPromise } = require("../config/db");
 
 const createFirstAdmin = async (req, res) => {
+  if (process.env.SEED_ADMIN_ENABLED !== "true") {
+    return res.status(404).json({
+      message: "Endpoint khởi tạo Admin đã bị tắt"
+    });
+  }
   try {
     const { username, password, fullName, phone, email } = req.body;
 
