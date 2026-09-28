@@ -124,7 +124,130 @@ const assignSchedule = async (req, res) => {
   }
 };
 
+const updateSchedule = async (req, res) => {
+  try {
+    const scheduleId = Number(req.params.id);
+    const { employeeId, shiftId, workDate, note } = req.body;
+
+    if (!scheduleId || !employeeId || !shiftId || !workDate) {
+      return res.status(400).json({
+        message: "Nhân viên, ca làm và ngày làm là bắt buộc"
+      });
+    }
+
+    const pool = await poolPromise;
+
+    const employeeResult = await pool.request()
+      .input("employeeId", sql.Int, employeeId)
+      .query(`
+        SELECT EmployeeId
+        FROM Employees
+        WHERE EmployeeId = @employeeId AND IsActive = 1
+      `);
+
+    if (employeeResult.recordset.length === 0) {
+      return res.status(400).json({
+        message: "Nhân viên không tồn tại hoặc đang ngừng hoạt động"
+      });
+    }
+
+    const shiftResult = await pool.request()
+      .input("shiftId", sql.Int, shiftId)
+      .query(`
+        SELECT ShiftId
+        FROM Shifts
+        WHERE ShiftId = @shiftId AND IsActive = 1
+      `);
+
+    if (shiftResult.recordset.length === 0) {
+      return res.status(400).json({
+        message: "Ca làm không tồn tại hoặc đang ngừng áp dụng"
+      });
+    }
+
+    const conflictResult = await pool.request()
+      .input("scheduleId", sql.Int, scheduleId)
+      .input("employeeId", sql.Int, employeeId)
+      .input("shiftId", sql.Int, shiftId)
+      .input("workDate", sql.Date, workDate)
+      .query(`
+        SELECT TOP 1 ws.ScheduleId
+        FROM WorkSchedules ws
+        INNER JOIN Shifts existingShift ON ws.ShiftId = existingShift.ShiftId
+        INNER JOIN Shifts newShift ON newShift.ShiftId = @shiftId
+        WHERE ws.EmployeeId = @employeeId
+          AND ws.WorkDate = @workDate
+          AND ws.ScheduleId <> @scheduleId
+          AND newShift.StartTime < existingShift.EndTime
+          AND newShift.EndTime > existingShift.StartTime
+      `);
+
+    if (conflictResult.recordset.length > 0) {
+      return res.status(400).json({
+        message: "Nhân viên đã có ca trùng thời gian trong ngày này"
+      });
+    }
+
+    const result = await pool.request()
+      .input("scheduleId", sql.Int, scheduleId)
+      .input("employeeId", sql.Int, employeeId)
+      .input("shiftId", sql.Int, shiftId)
+      .input("workDate", sql.Date, workDate)
+      .input("note", sql.NVarChar, note || null)
+      .query(`
+        UPDATE WorkSchedules
+        SET EmployeeId = @employeeId,
+            ShiftId = @shiftId,
+            WorkDate = @workDate,
+            Note = @note
+        WHERE ScheduleId = @scheduleId
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        message: "Không tìm thấy lịch phân công"
+      });
+    }
+
+    res.json({ message: "Cập nhật phân công thành công" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Không thể cập nhật phân công",
+      error: error.message
+    });
+  }
+};
+
+const deleteSchedule = async (req, res) => {
+  try {
+    const scheduleId = Number(req.params.id);
+    const pool = await poolPromise;
+
+    const result = await pool.request()
+      .input("scheduleId", sql.Int, scheduleId)
+      .query(`
+        DELETE FROM WorkSchedules
+        WHERE ScheduleId = @scheduleId
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        message: "Không tìm thấy lịch phân công"
+      });
+    }
+
+    res.json({ message: "Đã hủy phân công thành công" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Không thể hủy phân công",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getSchedules,
-  assignSchedule
+  assignSchedule,
+  updateSchedule,
+  deleteSchedule
 };

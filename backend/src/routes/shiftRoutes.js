@@ -3,7 +3,9 @@ const router = express.Router();
 
 const {
   getShifts,
-  createShift
+  createShift,
+  updateShift,
+  updateShiftStatus
 } = require("../controllers/shiftController");
 
 const {
@@ -18,6 +20,20 @@ router.post(
   authenticateToken,
   authorizeRoles("Admin"),
   createShift
+);
+
+router.put(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("Admin"),
+  updateShift
+);
+
+router.patch(
+  "/:id/status",
+  authenticateToken,
+  authorizeRoles("Admin"),
+  updateShiftStatus
 );
 
 module.exports = router;
