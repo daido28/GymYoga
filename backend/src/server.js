@@ -38,8 +38,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/shifts", shiftRoutes);
 app.use("/api/schedules", scheduleRoutes);
+app.use("/api/week5", require("./routes/week5Routes"));
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+if(require.main===module) app.listen(PORT, () => {
   console.log(`Server chạy tại http://localhost:${PORT}`);
 });
+module.exports=app;

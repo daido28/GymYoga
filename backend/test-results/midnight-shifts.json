@@ -1,0 +1,175 @@
+{
+  "testedAt": "2026-10-05T17:58:25.055Z",
+  "database": "GymYogaHRM_Week5_Test",
+  "total": 35,
+  "checks": [
+    {
+      "test": "Create isolated midnight branch",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create SANG",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create CHIEU",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create TOI",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create TRUNG",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create DAU_NGAY",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Reject invalid 00:00 00:00",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Reject invalid 18:00 18:00",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Reject invalid 18:00 02:00",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Reject invalid 25:00 00:00",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Reject invalid 6:00 12:00",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Create midnight employee",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create midnight employee account",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Morning assignment",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Adjacent afternoon accepted",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Adjacent midnight evening accepted",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Overlap inside midnight evening rejected",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Next day 00:00 boundary accepted",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Editing evening into afternoon rejects overlap",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Cancelled afternoon retains history",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Cancelled assignment does not block time edit",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Restore evening six-hour range",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create change-request employee",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create change-request account",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Assign change source",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Assign conflicting evening hour",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Request midnight evening",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Midnight target overlap rejected during approval",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Modern shift list labels midnight and six-hour duration",
+      "status": "PASS"
+    },
+    {
+      "test": "Create 18:00 to 00:00 through UI",
+      "status": "PASS"
+    },
+    {
+      "test": "Search and edit preserve midnight value",
+      "status": "PASS"
+    },
+    {
+      "test": "Shift management fits mobile viewport",
+      "status": "PASS"
+    },
+    {
+      "test": "Roster displays midnight next-day label",
+      "status": "PASS"
+    },
+    {
+      "test": "Employee cannot open shift-management page",
+      "status": "PASS"
+    },
+    {
+      "test": "No shift-page JavaScript errors",
+      "status": "PASS"
+    }
+  ]
+}

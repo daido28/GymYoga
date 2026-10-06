@@ -1,0 +1,76 @@
+{
+  "testedAt": "2026-10-05T17:57:34.734Z",
+  "database": "GymYogaHRM_Week5_Test",
+  "total": 14,
+  "results": [
+    {
+      "test": "Create isolated access-policy fixture",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create fixture staff account",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Admin can read full employee records",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Staff cannot read colleagues contact records",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "JWT Admin claim cannot elevate DB staff",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Staff retains safe roster directory",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Roster directory excludes phone and email",
+      "status": "PASS"
+    },
+    {
+      "test": "Revoked account old JWT rejected on legacy route",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Reactivated account regains permitted route",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Inactive employee old JWT rejected",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Database role changes override stale JWT role",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Restored staff role loses Admin access immediately",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Nonexistent identity rejected",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Malformed identity rejected",
+      "status": "PASS",
+      "http": 403
+    }
+  ]
+}

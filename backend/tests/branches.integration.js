@@ -1,0 +1,66 @@
+process.env.DB_DATABASE='GymYogaHRM_Week5_Test';process.env.JWT_SECRET=require('crypto').randomBytes(32).toString('hex');require('dotenv').config();
+const app=require('../src/server'),{poolPromise}=require('../src/config/db'),jwt=require('jsonwebtoken'),assert=require('node:assert/strict'),fs=require('fs');
+let server;const results=[];
+async function run(){
+ const pool=await poolPromise;assert.equal((await pool.request().query('SELECT DB_NAME() Name')).recordset[0].Name,'GymYogaHRM_Week5_Test');server=app.listen(3110);
+ const adminId=Number((await pool.request().query("SELECT TOP 1 u.UserId FROM AppUsers u JOIN Roles r ON r.RoleId=u.RoleId WHERE r.RoleName=N'Admin' AND u.IsActive=1")).recordset[0].UserId);
+ const sign=(id,role)=>jwt.sign({userId:Number(id),role},process.env.JWT_SECRET),admin=sign(adminId,'Admin'),suffix=Date.now(),password=require('crypto').randomBytes(16).toString('hex');
+ async function call(label,path,token,branch,expected,method='GET',body){const r=await fetch('http://localhost:3110/api/'+path,{method,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',...(branch?{'X-Branch-Id':String(branch)}:{})},...(body?{body:JSON.stringify(body)}:{})});const b=await r.json();assert.equal(r.status,expected,label+': '+b.message);results.push({test:label,status:'PASS',http:r.status});return b.data;}
+ const branches=await call('Admin lists current branches','week5/branches',admin,null,200),a=Number(branches.selectedBranchId);
+ const b=Number((await call('Admin creates second branch','week5/branches',admin,a,201,'POST',{branchName:'Chi nhánh kiểm thử '+suffix})).BranchId);
+ const managerEmployee=await call('Create manager profile in B','employees',admin,b,201,'POST',{fullName:'Quản lý thử B',position:'Quản lý chi nhánh'});
+ const managerAccount=await call('Admin issues scoped branch manager','week5/employees/'+managerEmployee.EmployeeId+'/account',admin,b,201,'POST',{username:'manager_b_'+suffix,password,role:'Quản lý chi nhánh'});
+ const manager=sign(managerAccount.userId,'Quản lý chi nhánh');
+ const staffEmployee=await call('Manager creates instructor profile in B','employees',manager,b,201,'POST',{fullName:'HLV thử B',position:'HLV Yoga',phone:'0900000000'});
+ const staffAccount=await call('Manager issues employee instructor account','week5/employees/'+staffEmployee.EmployeeId+'/account',manager,b,201,'POST',{username:'hlv_b_'+suffix,password});const staff=sign(staffAccount.userId,'Nhân viên');
+ const restricted=await call('Manager sees only assigned branch','week5/branches',manager,null,200);assert.equal(restricted.branches.length,1);assert.equal(Number(restricted.branches[0].BranchId),b);
+ await call('Manager cannot switch to unassigned branch','employees',manager,a,403);
+ await call('Forged Admin role claim cannot widen manager scope','employees',sign(managerAccount.userId,'Admin'),a,403);
+ await call('Staff cannot switch to another branch','week5/calendar?start=2026-10-05&end=2026-10-06',staff,a,403);
+ const eA=await call('Create isolated employee in A','employees',admin,a,201,'POST',{fullName:'HLV thử A',position:'HLV',email:'private@example.invalid'});
+ const accountA=await call('Create A employee account','week5/employees/'+eA.EmployeeId+'/account',admin,a,201,'POST',{username:'hlv_a_'+suffix,password});const tokenA=sign(accountA.userId,'Nhân viên');
+ const code='BR_'+String(suffix).slice(-7);
+ const shiftA=Number((await call('Create shift code in A','shifts',admin,a,201,'POST',{shiftCode:code,shiftName:'Ca A',startTime:'06:00',endTime:'10:00'})).ShiftId);
+ const shiftB=Number((await call('Reuse shift code safely in B','shifts',manager,b,201,'POST',{shiftCode:code,shiftName:'Ca B',startTime:'06:00',endTime:'10:00'})).ShiftId);
+ const jobsA=await call('Read branch A catalog','week5/jobs',admin,a,200),jobsB=await call('Read branch B catalog','week5/jobs',manager,b,200);
+ const jobA=Number(jobsA.jobs.find(j=>j.JobName==='Huấn luyện viên').JobTypeId),jobB=Number(jobsB.jobs.find(j=>j.JobName==='Huấn luyện viên').JobTypeId);assert.notEqual(jobA,jobB);
+ const employeesB=await call('Manager employee list excludes A','employees',manager,b,200);assert(employeesB.some(e=>Number(e.EmployeeId)===Number(staffEmployee.EmployeeId)));assert(!employeesB.some(e=>Number(e.EmployeeId)===Number(eA.EmployeeId)));
+ const shiftsB=await call('Manager shift list excludes A','shifts',manager,b,200);assert(shiftsB.some(s=>Number(s.ShiftId)===shiftB));assert(!shiftsB.some(s=>Number(s.ShiftId)===shiftA));
+ await call('Cross-branch employee edit denied','employees/'+eA.EmployeeId,manager,b,404,'PUT',{fullName:'Không được sửa',position:'HLV'});
+ await call('Cross-branch employee status denied','employees/'+eA.EmployeeId+'/status',manager,b,404,'PATCH',{isActive:false});
+ await call('Cross-branch shift edit denied','shifts/'+shiftA,manager,b,404,'PUT',{shiftCode:code,shiftName:'Không được sửa',startTime:'07:00',endTime:'11:00'});
+ await call('Cross-branch shift capacity denied','week5/shifts/'+shiftA+'/capacity',manager,b,404,'PATCH',{capacity:2,isSupport:false});
+ await call('Cross-branch job edit denied','week5/jobs/'+jobA,manager,b,404,'PATCH',{jobName:'Không được sửa',color:'#123456'});
+ await call('Cross-branch skill assignment denied','week5/employees/'+staffEmployee.EmployeeId+'/jobs',manager,b,404,'PUT',{jobTypeIds:[jobA],primaryJobTypeId:jobA});
+ await call('Manager cannot create branches','week5/branches',manager,b,403,'POST',{branchName:'Không được tạo'});
+ await call('Manager cannot rename branches','week5/branches/'+b,manager,b,403,'PATCH',{branchName:'Không được sửa'});
+ const elevated=await call('Create unused profile for escalation tests','employees',manager,b,201,'POST',{fullName:'Chưa cấp',position:'HLV'});
+ await call('Manager cannot issue system Admin','week5/employees/'+elevated.EmployeeId+'/account',manager,b,403,'POST',{username:'deny_'+suffix,password,role:'Admin'});
+ await call('Manager cannot issue another manager','week5/employees/'+elevated.EmployeeId+'/account',manager,b,403,'POST',{username:'deny_'+suffix,password,role:'Quản lý chi nhánh'});
+ for(const[branch,employee,shift,job]of [[a,eA.EmployeeId,shiftA,jobA],[b,staffEmployee.EmployeeId,shiftB,jobB]]){
+  await call('Configure instructor skill '+branch,'week5/employees/'+employee+'/jobs',admin,branch,200,'PUT',{jobTypeIds:[job],primaryJobTypeId:job});
+  await call('Configure instructor coverage '+branch,'week5/shifts/'+shift+'/jobs',admin,branch,200,'PUT',{requirements:[{jobTypeId:job,minStaff:1,maxStaff:2}]});
+ }
+ const day=(await pool.request().query('SELECT CONVERT(varchar(10),DATEADD(day,1,GETDATE()),23) Day')).recordset[0].Day;
+ await call('Cross-branch employee in assignment denied','schedules',manager,b,404,'POST',{employeeId:eA.EmployeeId,shiftId:shiftB,jobTypeId:jobB,workDate:day});
+ await call('Cross-branch shift in assignment denied','schedules',manager,b,404,'POST',{employeeId:staffEmployee.EmployeeId,shiftId:shiftA,jobTypeId:jobB,workDate:day});
+ const scheduleA=Number((await call('Assign instructor A','schedules',admin,a,201,'POST',{employeeId:eA.EmployeeId,shiftId:shiftA,jobTypeId:jobA,workDate:day})).ScheduleId);
+ const scheduleB=Number((await call('Manager assigns instructor B','schedules',manager,b,201,'POST',{employeeId:staffEmployee.EmployeeId,shiftId:shiftB,jobTypeId:jobB,workDate:day})).ScheduleId);
+ await call('Manager publishes own branch roster','week5/roster-publications',manager,b,200,'POST',{shiftId:shiftB,workDate:day,publish:true});
+ const cal=await call('B calendar excludes A schedules and jobs','week5/calendar?start='+day+'&end='+day,manager,b,200);assert(cal.schedules.some(r=>r.ScheduleId===scheduleB));assert(!cal.schedules.some(r=>r.ScheduleId===scheduleA));assert(cal.shifts.every(r=>Number(r.ShiftId)===shiftB));
+ const legacy=await call('Legacy schedule list excludes A','schedules',manager,b,200);assert(legacy.some(r=>Number(r.ScheduleId)===scheduleB));assert(!legacy.some(r=>Number(r.ScheduleId)===scheduleA));
+ const safe=await call('B employee retains branch roster without contacts','week5/jobs',staff,b,200);assert(safe.employees.every(r=>!('Phone'in r)&&!('Email'in r)&&!('HasAccount'in r)));assert(!safe.employees.some(r=>r.EmployeeId===Number(eA.EmployeeId)));
+ await call('Cross-branch schedule cancellation denied','schedules/'+scheduleA,manager,b,404,'DELETE');
+ await call('Cross-branch check-in denied','week5/attendance/check-in',staff,b,404,'POST',{scheduleId:scheduleA});
+ const leave=Number((await call('Staff A creates own leave','week5/leave-requests',tokenA,a,201,'POST',{scheduleId:scheduleA,reason:'Kiểm thử chi nhánh'})).RequestId);
+ await call('Manager B cannot review A leave','week5/leave-requests/'+leave,manager,b,404,'PATCH',{status:'Approved'});
+ const leaves=await call('B request list excludes A requests','week5/leave-requests',manager,b,200);assert(!leaves.some(r=>Number(r.RequestId)===leave));
+ await call('Manager B sees branch attendance list','week5/attendance',manager,b,200);
+ await call('Admin can rename B','week5/branches/'+b,admin,a,200,'PATCH',{branchName:'Chi nhánh B '+suffix});
+ await pool.request().input('user',managerAccount.userId).query('DELETE UserBranches WHERE UserId=@user');
+ await call('Revoking branch access invalidates old token scope','shifts',manager,b,403);
+ await pool.request().input('user',managerAccount.userId).input('branch',b).query('INSERT UserBranches(UserId,BranchId) VALUES(@user,@branch)');
+ await call('Restored branch grant restores allowed scope','shifts',manager,b,200);
+ fs.mkdirSync('test-results',{recursive:true});fs.writeFileSync('test-results/branches-integration.json',JSON.stringify({testedAt:new Date().toISOString(),database:'GymYogaHRM_Week5_Test',total:results.length,results,demo:{branchA:a,branchB:b,managerUserId:Number(managerAccount.userId),staffUserId:Number(staffAccount.userId),managerUsername:managerAccount.username,staffUsername:staffAccount.username,workDate:day,shiftB,scheduleB}},null,2));console.log(results.length+' branch isolation API/SQL checks PASS');
+}
+run().catch(e=>{console.error(e.message);process.exitCode=1;}).finally(async()=>{if(server)await new Promise(r=>server.close(r));const p=await poolPromise.catch(()=>null);if(p)await p.close();});

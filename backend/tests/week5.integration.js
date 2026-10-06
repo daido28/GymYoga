@@ -1,0 +1,58 @@
+// Runs only against the isolated database created by the setup script.
+process.env.DB_DATABASE='GymYogaHRM_Week5_Test';process.env.PORT='3105';process.env.SEED_ADMIN_ENABLED='true';process.env.JWT_SECRET=require('crypto').randomBytes(32).toString('hex');
+require('dotenv').config();
+const assert=require('node:assert/strict'),fs=require('node:fs'),app=require('../src/server'),{poolPromise}=require('../src/config/db');
+const results=[];let server;
+async function run(){
+ const pool=await poolPromise;assert.equal((await pool.request().query('SELECT DB_NAME() AS Name')).recordset[0].Name,'GymYogaHRM_Week5_Test');
+ server=app.listen(3105);const day=(await pool.request().query('SELECT CONVERT(varchar(10),GETDATE(),23) AS Day')).recordset[0].Day;
+ const password=require('crypto').randomBytes(16).toString('hex');
+ async function call(label,path,method,body,token,expected){const r=await fetch('http://localhost:3105/api/'+path,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});const b=await r.json();assert.equal(r.status,expected,`${label}: ${b.message}`);results.push({test:label,status:'PASS',http:r.status});return b;}
+ await call('No token denied','week5/calendar?start='+day+'&end='+day,'GET',null,null,401);
+ await call('Seed isolated Admin','auth/seed-admin','POST',{username:'week5_admin',password,fullName:'Admin kiểm thử'},null,201);
+ const admin=(await call('Admin login','auth/login','POST',{username:'week5_admin',password},null,200)).token;
+ const ids=[],tokens=[];
+ for(let i=0;i<4;i++){const e=await call('Create employee '+i,'employees','POST',{fullName:'Nhân viên thử '+i,position:'PT'},admin,201);ids.push(Number(e.data.EmployeeId));await call('Link account '+i,`week5/employees/${ids[i]}/account`,'POST',{username:'week5_staff'+i,password},admin,201);tokens.push((await call('Staff login '+i,'auth/login','POST',{username:'week5_staff'+i,password},null,200)).token);}
+ await call('Duplicate employee account rejected',`week5/employees/${ids[0]}/account`,'POST',{username:'duplicate',password},admin,409);
+ await call('Staff cannot grant account',`week5/employees/${ids[0]}/account`,'POST',{username:'another',password},tokens[0],403);
+ const shifts=(await call('Read shifts','shifts','GET',null,admin,200)).data,sang=Number(shifts.find(s=>s.ShiftCode==='SANG').ShiftId),chieu=Number(shifts.find(s=>s.ShiftCode==='CHIEU').ShiftId);
+ const schedules=[];
+ for(let i=0;i<3;i++)schedules.push((await call('Assign morning '+i,'schedules','POST',{employeeId:ids[i],shiftId:sang,workDate:day},admin,201)).data.ScheduleId);
+ await call('Fourth employee blocked at capacity 3','schedules','POST',{employeeId:ids[3],shiftId:sang,workDate:day},admin,409);
+ const cal=await call('Calendar shows team names','week5/calendar?start='+day+'&end='+day,'GET',null,tokens[0],200);assert.equal(cal.data.schedules.length,3);assert.equal(cal.data.shifts.find(s=>s.ShiftId===sang).Capacity,3);
+ const own=await call('Personal schedule filtered','schedules?userId=999','GET',null,tokens[0],200);assert.equal(own.data.length,1);assert.equal(Number(own.data[0].EmployeeId),ids[0]);
+ await call('Other employee cannot check in','week5/attendance/check-in','POST',{scheduleId:schedules[0]},tokens[1],403);
+ await call('Check in own schedule','week5/attendance/check-in','POST',{scheduleId:schedules[0]},tokens[0],201);
+ await call('Duplicate check in rejected','week5/attendance/check-in','POST',{scheduleId:schedules[0]},tokens[0],409);
+ await call('Attended schedule cannot change','week5/leave-requests','POST',{scheduleId:schedules[0],reason:'Thử'},tokens[0],409);
+ await call('Admin cannot edit attended schedule',`schedules/${schedules[0]}`,'PUT',{employeeId:ids[0],shiftId:chieu,workDate:day},admin,409);
+ await call('Check out','week5/attendance/check-out','POST',{scheduleId:schedules[0]},tokens[0],200);
+ await call('Repeat check out rejected','week5/attendance/check-out','POST',{scheduleId:schedules[0]},tokens[0],409);
+ const leave=(await call('Request leave','week5/leave-requests','POST',{scheduleId:schedules[1],reason:'Việc gia đình'},tokens[1],201)).data.RequestId;
+ await call('Pending leave blocks change','week5/shift-change-requests','POST',{scheduleId:schedules[1],targetShiftId:chieu,reason:'Thử'},tokens[1],409);
+ await call('Staff cannot approve',`week5/leave-requests/${leave}`,'PATCH',{status:'Approved'},tokens[1],403);
+ await call('Approve leave',`week5/leave-requests/${leave}`,'PATCH',{status:'Approved'},admin,200);
+ await call('Repeat approval rejected',`week5/leave-requests/${leave}`,'PATCH',{status:'Approved'},admin,409);
+ await call('Released capacity can be filled','schedules','POST',{employeeId:ids[3],shiftId:sang,workDate:day},admin,201);
+ const change=(await call('Request afternoon shift','week5/shift-change-requests','POST',{scheduleId:schedules[2],targetShiftId:chieu,reason:'Đổi sang chiều'},tokens[2],201)).data.RequestId;
+ await call('Approve shift change',`week5/shift-change-requests/${change}`,'PATCH',{status:'Approved'},admin,200);
+ const changed=(await call('Changed schedule persisted','schedules','GET',null,tokens[2],200)).data;assert.equal(Number(changed[0].ShiftId),Number(chieu));
+ await call('Admin can expand main shift capacity',`week5/shifts/${sang}/capacity`,'PATCH',{capacity:5,isSupport:false},admin,200);
+ await call('Restore default capacity for regression',`week5/shifts/${sang}/capacity`,'PATCH',{capacity:3,isSupport:false},admin,200);
+ const support=(await call('Create support shift','shifts','POST',{shiftCode:'HOTRO',shiftName:'Hỗ trợ sáng',startTime:'08:00',endTime:'10:00'},admin,201)).data.ShiftId;
+ await call('Configure support capacity 5',`week5/shifts/${support}/capacity`,'PATCH',{capacity:5,isSupport:true},admin,200);
+ await call('Support still rejects personal overlap','schedules','POST',{employeeId:ids[0],shiftId:support,workDate:day},admin,409);
+ await call('Invalid calendar range rejected','week5/calendar?start=2026-01-01&end=2026-12-31','GET',null,admin,400);
+ const afternoon1=(await call('Fill afternoon slot 2','schedules','POST',{employeeId:ids[1],shiftId:chieu,workDate:day},admin,201)).data.ScheduleId;
+ await call('Fill afternoon slot 3','schedules','POST',{employeeId:ids[0],shiftId:chieu,workDate:day},admin,201);
+ const fourth=(await call('Read fourth personal schedule','schedules','GET',null,tokens[3],200)).data[0].ScheduleId;
+ const full=(await call('Request full target shift','week5/shift-change-requests','POST',{scheduleId:fourth,targetShiftId:chieu,reason:'Thử sức chứa khi duyệt'},tokens[3],201)).data.RequestId;
+ await call('Approval checks full target atomically',`week5/shift-change-requests/${full}`,'PATCH',{status:'Approved'},admin,409);
+ const pending=(await call('Failed approval remains pending','week5/shift-change-requests','GET',null,tokens[3],200)).data;assert.equal(pending[0].Status,'Pending');
+ await call('Admin cannot cancel pending schedule',`schedules/${fourth}`,'DELETE',null,admin,409);
+ await call('Reject full target change',`week5/shift-change-requests/${full}`,'PATCH',{status:'Rejected',reviewNote:'Ca đích đủ người'},admin,200);
+ await call('Cancel after rejection preserves history',`schedules/${fourth}`,'DELETE',null,admin,200);
+ const concurrent=await Promise.all([fetch('http://localhost:3105/api/week5/attendance/check-in',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tokens[1]},body:JSON.stringify({scheduleId:afternoon1})}),fetch('http://localhost:3105/api/week5/attendance/check-in',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tokens[1]},body:JSON.stringify({scheduleId:afternoon1})})]);assert.deepEqual(concurrent.map(r=>r.status).sort(),[201,409]);results.push({test:'Concurrent check-ins create exactly one attendance',status:'PASS'});
+ fs.mkdirSync('test-results',{recursive:true});fs.writeFileSync('test-results/week5-integration.json',JSON.stringify({database:'GymYogaHRM_Week5_Test',testedAt:new Date().toISOString(),total:results.length,results},null,2));console.log(`${results.length} integration checks PASS against isolated SQL Server database`);
+}
+run().catch(e=>{console.error(e.message);process.exitCode=1;}).finally(async()=>{if(server)await new Promise(r=>server.close(r));const pool=await poolPromise.catch(()=>null);if(pool)await pool.close();});

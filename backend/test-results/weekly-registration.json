@@ -1,0 +1,226 @@
+{
+  "testedAt": "2026-10-05T17:58:49.483Z",
+  "database": "GymYogaHRM_Week5_Test",
+  "total": 45,
+  "checks": [
+    {
+      "test": "Create weekly fixture branch",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Read fixture jobs",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create weekly shift",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create overlapping shift",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Configure weekly job 15",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Configure weekly job 16",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create weekly employee 0",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create weekly account 0",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Configure weekly employee job 0",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create weekly employee 1",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create weekly account 1",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Configure weekly employee job 1",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create weekly employee 2",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create weekly account 2",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Configure weekly employee job 2",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Reject registering other employee",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Reject month-spanning dates",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Reject non-Monday week",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Reject duplicate selections",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Reject wrong specialty",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Reject past date",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Own weekly selection creates two drafts",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Registered dates appear in own schedule",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Duplicate scheduled date rejected",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Overlapping registration rejected",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Atomic submission rejects second bad selection",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Atomic failure rolls back first selection",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Second worker fills same job within max",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Third worker exceeds job maximum",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Admin fills another draft day",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Admin publishes completed day",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Staff cannot register published date",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Admin publishes day with one worker",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Admin fills another missing date",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Prepare partially filled future date",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Publish partially filled date with minimum covered",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Admin fills published date within job limit",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Employee registers weekly date through UI",
+      "status": "PASS"
+    },
+    {
+      "test": "Month view does not offer month registration",
+      "status": "PASS"
+    },
+    {
+      "test": "Create unconfigured shift for setup UI",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Admin empty assignment directs to selected shift setup",
+      "status": "PASS"
+    },
+    {
+      "test": "Admin saves missing shift job configuration through UI",
+      "status": "PASS"
+    },
+    {
+      "test": "Admin fills previously unconfigured shift through UI",
+      "status": "PASS"
+    },
+    {
+      "test": "Verify Admin UI assignment persisted",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "No registration UI JavaScript errors",
+      "status": "PASS"
+    }
+  ]
+}

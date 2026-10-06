@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-10-05T17:34:25.935Z",
+  "dataCounts": {
+    "DatabaseName": "GymYogaHRM",
+    "Employees": 4,
+    "Shifts": 6,
+    "WorkSchedules": 4,
+    "Branches": 3
+  },
+  "defaultVietnameseLabels": "PASS",
+  "migration": "004_branches.sql",
+  "before": {
+    "Employees": 4,
+    "Shifts": 4,
+    "WorkSchedules": 4
+  }
+}

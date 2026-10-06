@@ -2,21 +2,29 @@ const { sql, poolPromise } = require("../config/db");
 
 const getEmployees = async (req, res) => {
   try {
+    const search = (req.query.search || "").trim();
     const pool = await poolPromise;
 
-    const result = await pool.request().query(`
-      SELECT
-        EmployeeId,
-        FullName,
-        Phone,
-        Email,
-        Position,
-        Specialty,
-        IsActive,
-        UserId
-      FROM Employees
-      ORDER BY EmployeeId DESC
-    `);
+    const result = await pool.request().input("branch", sql.Int, req.branchId)
+      .input("search", sql.NVarChar, `%${search}%`)
+      .query(`
+        SELECT
+          EmployeeId,
+          FullName,
+          Phone,
+          Email,
+          Position,
+          Specialty,
+          IsActive,
+          UserId
+        FROM Employees
+        WHERE BranchId=@branch AND (@search = N'%%'
+           OR FullName LIKE @search
+           OR Phone LIKE @search
+           OR Email LIKE @search
+           OR Position LIKE @search)
+        ORDER BY EmployeeId DESC
+      `);
 
     res.json({
       message: "Lấy danh sách nhân viên thành công",
@@ -42,7 +50,7 @@ const createEmployee = async (req, res) => {
 
     const pool = await poolPromise;
 
-    const result = await pool.request()
+    const result = await pool.request().input("branch", sql.Int, req.branchId)
       .input("fullName", sql.NVarChar, fullName)
       .input("phone", sql.NVarChar, phone || null)
       .input("email", sql.NVarChar, email || null)
@@ -50,12 +58,12 @@ const createEmployee = async (req, res) => {
       .input("specialty", sql.NVarChar, specialty || null)
       .query(`
         INSERT INTO Employees
-          (FullName, Phone, Email, Position, Specialty)
+          (FullName, Phone, Email, Position, Specialty, BranchId)
         OUTPUT INSERTED.EmployeeId,
                INSERTED.FullName,
                INSERTED.Position
         VALUES
-          (@fullName, @phone, @email, @position, @specialty)
+          (@fullName, @phone, @email, @position, @specialty, @branch)
       `);
 
     res.status(201).json({
@@ -85,7 +93,7 @@ const updateEmployee = async (req, res) => {
 
     const pool = await poolPromise;
 
-    const result = await pool.request()
+    const result = await pool.request().input("branch", sql.Int, req.branchId)
       .input("employeeId", sql.Int, employeeId)
       .input("fullName", sql.NVarChar, fullName)
       .input("phone", sql.NVarChar, phone || null)
@@ -99,7 +107,7 @@ const updateEmployee = async (req, res) => {
             Email = @email,
             Position = @position,
             Specialty = @specialty
-        WHERE EmployeeId = @employeeId
+        WHERE EmployeeId = @employeeId AND BranchId=@branch
       `);
 
     if (result.rowsAffected[0] === 0) {
@@ -130,13 +138,13 @@ const updateEmployeeStatus = async (req, res) => {
 
     const pool = await poolPromise;
 
-    const result = await pool.request()
+    const result = await pool.request().input("branch", sql.Int, req.branchId)
       .input("employeeId", sql.Int, employeeId)
       .input("isActive", sql.Bit, isActive)
       .query(`
         UPDATE Employees
         SET IsActive = @isActive
-        WHERE EmployeeId = @employeeId
+        WHERE EmployeeId = @employeeId AND BranchId=@branch
       `);
 
     if (result.rowsAffected[0] === 0) {

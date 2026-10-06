@@ -1,0 +1,286 @@
+{
+  "database": "GymYogaHRM_Week5_Test",
+  "testedAt": "2026-10-05T17:57:18.188Z",
+  "total": 56,
+  "results": [
+    {
+      "test": "No token denied",
+      "status": "PASS",
+      "http": 401
+    },
+    {
+      "test": "Seed isolated Admin",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Admin login",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create employee 0",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Link account 0",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Staff login 0",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create employee 1",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Link account 1",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Staff login 1",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create employee 2",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Link account 2",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Staff login 2",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create employee 3",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Link account 3",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Staff login 3",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Duplicate employee account rejected",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Staff cannot grant account",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Read shifts",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Assign morning 0",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Assign morning 1",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Assign morning 2",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Fourth employee blocked at capacity 3",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Calendar shows team names",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Personal schedule filtered",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Other employee cannot check in",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Check in own schedule",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Duplicate check in rejected",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Attended schedule cannot change",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Admin cannot edit attended schedule",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Check out",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Repeat check out rejected",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Request leave",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Pending leave blocks change",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Staff cannot approve",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Approve leave",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Repeat approval rejected",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Released capacity can be filled",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Request afternoon shift",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Approve shift change",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Changed schedule persisted",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Admin can expand main shift capacity",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Restore default capacity for regression",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create support shift",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Configure support capacity 5",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Support still rejects personal overlap",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Invalid calendar range rejected",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Fill afternoon slot 2",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Fill afternoon slot 3",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Read fourth personal schedule",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Request full target shift",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Approval checks full target atomically",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Failed approval remains pending",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Admin cannot cancel pending schedule",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Reject full target change",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Cancel after rejection preserves history",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Concurrent check-ins create exactly one attendance",
+      "status": "PASS"
+    }
+  ]
+}

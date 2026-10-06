@@ -7,6 +7,7 @@ const {
   updateSchedule,
   deleteSchedule
 } = require("../controllers/scheduleController");
+const calendar = require('../controllers/calendarController');
 
 const {
   authenticateToken,
@@ -19,21 +20,21 @@ router.post(
   "/",
   authenticateToken,
   authorizeRoles("Admin"),
-  assignSchedule
+  calendar.assign
 );
 
 router.put(
   "/:id",
   authenticateToken,
   authorizeRoles("Admin"),
-  updateSchedule
+  calendar.update
 );
 
 router.delete(
   "/:id",
   authenticateToken,
   authorizeRoles("Admin"),
-  deleteSchedule
+  calendar.cancel
 );
 
 module.exports = router;

@@ -10,7 +10,7 @@ loginForm.addEventListener("submit", async (event) => {
   messageBox.innerHTML = "";
 
   try {
-    const response = await fetch("http://localhost:3000/api/auth/login", {
+    const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -29,6 +29,7 @@ loginForm.addEventListener("submit", async (event) => {
       return;
     }
 
+    localStorage.removeItem("branchId");
     localStorage.setItem("token", result.token);
     localStorage.setItem("user", JSON.stringify(result.user));
 
@@ -39,7 +40,7 @@ loginForm.addEventListener("submit", async (event) => {
     `;
 
     setTimeout(() => {
-      window.location.href = "dashboard.html";
+      window.location.href = "week5.html";
     }, 700);
   } catch (error) {
     messageBox.innerHTML = `

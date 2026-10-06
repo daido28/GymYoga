@@ -1,0 +1,58 @@
+process.env.DB_DATABASE='GymYogaHRM_Week5_Test';process.env.JWT_SECRET=require('crypto').randomBytes(32).toString('hex');require('dotenv').config();
+const app=require('../src/server'),{poolPromise}=require('../src/config/db'),jwt=require('jsonwebtoken'),assert=require('node:assert/strict'),fs=require('fs');
+const {chromium}=require('C:/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+let server,browser;const checks=[];
+(async()=>{
+ const pool=await poolPromise;assert.equal((await pool.request().query('SELECT DB_NAME() Name')).recordset[0].Name,'GymYogaHRM_Week5_Test');server=app.listen(3113);
+ const userId=Number((await pool.request().query("SELECT TOP 1 u.UserId FROM AppUsers u JOIN Roles r ON r.RoleId=u.RoleId WHERE r.RoleName=N'Admin'")).recordset[0].UserId),admin=jwt.sign({userId,role:'Admin'},process.env.JWT_SECRET);let branch;
+ async function call(label,path,method,body,expected,token=admin){const r=await fetch('http://localhost:3113/api/'+path,{method,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',...(branch?{'X-Branch-Id':String(branch)}:{})},...(body?{body:JSON.stringify(body)}:{})});const b=await r.json();assert.equal(r.status,expected,label+': '+b.message);checks.push({test:label,status:'PASS',http:r.status});return b.data;}
+ branch=Number((await call('Create weekly fixture branch','week5/branches','POST',{branchName:'Đăng ký tuần '+Date.now()},201)).BranchId);
+ const catalog=await call('Read fixture jobs','week5/jobs','GET',null,200),job=catalog.jobs[0].JobTypeId,wrong=catalog.jobs[1].JobTypeId;
+ const shift=Number((await call('Create weekly shift','shifts','POST',{shiftCode:'WEEK',shiftName:'Ca đăng ký tuần',startTime:'06:00',endTime:'12:00'},201)).ShiftId);
+ const overlap=Number((await call('Create overlapping shift','shifts','POST',{shiftCode:'OVER',shiftName:'Ca trùng',startTime:'08:00',endTime:'10:00'},201)).ShiftId);
+ for(const sid of [shift,overlap])await call('Configure weekly job '+sid,'week5/shifts/'+sid+'/jobs','PUT',{requirements:[{jobTypeId:job,minStaff:1,maxStaff:2}]},200);
+ const employees=[],tokens=[];
+ for(let i=0;i<3;i++){
+  const e=await call('Create weekly employee '+i,'employees','POST',{fullName:'Nhân viên đăng ký '+i,position:'Nhân viên'},201);employees.push(Number(e.EmployeeId));
+  const a=await call('Create weekly account '+i,'week5/employees/'+e.EmployeeId+'/account','POST',{username:'week_reg_'+Date.now()+'_'+i,password:require('crypto').randomBytes(16).toString('hex')},201);tokens.push(jwt.sign({userId:Number(a.userId),role:'Nhân viên'},process.env.JWT_SECRET));
+  await call('Configure weekly employee job '+i,'week5/employees/'+e.EmployeeId+'/jobs','PUT',{jobTypeIds:[job],primaryJobTypeId:job},200);
+ }
+ const today=(await pool.request().query('SELECT CONVERT(varchar(10),SYSDATETIME(),23) Today')).recordset[0].Today,d=new Date(today+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+((8-d.getUTCDay())%7||7));const week=d.toISOString().slice(0,10),day=n=>new Date(Date.parse(week)+n*86400000).toISOString().slice(0,10);
+ const entry=(n,s=shift,j=job)=>({workDate:day(n),shiftId:s,jobTypeId:j}),register=(label,entries,expected,token=tokens[0],extra={})=>call(label,'week5/weekly-registrations','POST',{weekStart:week,entries,...extra},expected,token);
+ await register('Reject registering other employee',[entry(0)],403,tokens[0],{employeeId:employees[1]});
+ await register('Reject month-spanning dates',[entry(0),entry(8)],400);
+ await register('Reject non-Monday week',[entry(0)],400,tokens[0],{weekStart:day(1)});
+ await register('Reject duplicate selections',[entry(0),entry(0)],400);
+ await register('Reject wrong specialty',[entry(0,shift,wrong)],409);
+ await register('Reject past date',[{...entry(0),workDate:'2020-01-06'}],400);
+ await register('Own weekly selection creates two drafts',[entry(0),entry(1)],201);
+ const own=await call('Registered dates appear in own schedule','schedules','GET',null,200,tokens[0]);assert.equal(own.length,2);assert(own.every(r=>Number(r.EmployeeId)===employees[0]));
+ await register('Duplicate scheduled date rejected',[entry(0)],409);
+ await register('Overlapping registration rejected',[entry(0,overlap)],409);
+ await register('Atomic submission rejects second bad selection',[entry(2),entry(0,overlap)],409);
+ const after=await call('Atomic failure rolls back first selection','schedules','GET',null,200,tokens[0]);assert.equal(after.length,2);
+ await register('Second worker fills same job within max',[entry(0)],201,tokens[1]);
+ await register('Third worker exceeds job maximum',[entry(0)],409,tokens[2]);
+ await call('Admin fills another draft day','schedules','POST',{employeeId:employees[1],shiftId:shift,jobTypeId:job,workDate:day(1)},201);
+ await call('Admin publishes completed day','week5/roster-publications','POST',{shiftId:shift,workDate:day(1),publish:true},200);
+ await register('Staff cannot register published date',[entry(1)],409,tokens[2]);
+ await call('Admin publishes day with one worker','week5/roster-publications','POST',{shiftId:shift,workDate:day(0),publish:true},200);
+ await call('Admin fills another missing date','schedules','POST',{employeeId:employees[2],shiftId:shift,jobTypeId:job,workDate:day(2)},201);
+ await register('Prepare partially filled future date',[entry(4)],201);
+ await call('Publish partially filled date with minimum covered','week5/roster-publications','POST',{shiftId:shift,workDate:day(4),publish:true},200);
+ await call('Admin fills published date within job limit','schedules','POST',{employeeId:employees[1],shiftId:shift,jobTypeId:job,workDate:day(4)},201);
+ browser=await chromium.launch({channel:'msedge',headless:true});const context=await browser.newContext({viewport:{width:1600,height:1100}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await context.addInitScript(({token,branch})=>{localStorage.setItem('token',token);localStorage.setItem('user',JSON.stringify({role:'Nhân viên',fullName:'Nhân viên đăng ký 0'}));localStorage.setItem('branchId',branch);},{token:tokens[0],branch:String(branch)});
+ await page.goto('http://localhost:3113/week5.html');await page.locator('#calendar table').waitFor();await page.fill('#date',week);await page.click('#show');await page.waitForFunction(expected=>document.querySelector('#rangeLabel').textContent.includes(expected),`${Number(week.slice(8))}/${Number(week.slice(5,7))}/${week.slice(0,4)}`);
+ await page.click('#registerWeek');await page.locator('#registrationDialog').waitFor();await page.locator(`input[data-shift="${shift}"][data-day="${day(3)}"]`).check();await page.click('#registrationSubmit');await page.waitForFunction(()=>!document.querySelector('#registrationDialog').open);checks.push({test:'Employee registers weekly date through UI',status:'PASS'});
+ await page.selectOption('#view','month');await page.locator('.month-grid').waitFor();await page.click('#registerWeek');assert.equal(await page.locator('#registrationDialog').isVisible(),false);assert((await page.locator('#message').innerText()).includes('chế độ Tuần'));checks.push({test:'Month view does not offer month registration',status:'PASS'});
+ await page.selectOption('#view','week');await page.locator('#calendar table').waitFor();await page.click('#registerWeek');await page.screenshot({path:'test-results/weekly-registration-staff.png',fullPage:true});await page.click('[data-close="registrationDialog"]');
+ const adminContext=await browser.newContext({viewport:{width:1600,height:1100}}),adminPage=await adminContext.newPage();await adminContext.addInitScript(({token,branch,userId})=>{localStorage.setItem('token',token);localStorage.setItem('user',JSON.stringify({role:'Admin',userId,fullName:'Admin kiểm thử'}));localStorage.setItem('branchId',branch);},{token:admin,branch:String(branch),userId});
+ const empty=Number((await call('Create unconfigured shift for setup UI','shifts','POST',{shiftCode:'EMPTY',shiftName:'Ca chưa thiết lập',startTime:'12:00',endTime:'18:00'},201)).ShiftId);
+ await adminPage.goto('http://localhost:3113/week5.html');await adminPage.locator('#calendar table').waitFor();await adminPage.click('#newAssignment');await adminPage.selectOption('#assignShift',String(empty));assert.equal(await adminPage.locator('#assignmentForm .dialog-actions .primary').isDisabled(),true);await adminPage.click('#setupShiftJobs');assert.equal(await adminPage.inputValue('#requirementShift'),String(empty));checks.push({test:'Admin empty assignment directs to selected shift setup',status:'PASS'});await adminPage.screenshot({path:'test-results/weekly-registration-admin-setup.png',fullPage:true});
+ await adminPage.locator(`#requirementRows tr[data-job="${job}"] .enabled`).check();await adminPage.click('#requirementForm button');await adminPage.waitForFunction(()=>document.querySelector('#message').textContent==='Đã lưu sức chứa và nhu cầu công việc');checks.push({test:'Admin saves missing shift job configuration through UI',status:'PASS'});
+ await adminPage.click('#newAssignment');await adminPage.selectOption('#assignShift',String(empty));await adminPage.selectOption('#assignJob',String(job));await adminPage.selectOption('#assignEmployee',String(employees[0]));await adminPage.fill('#assignmentForm input[name="workDate"]',day(5));await adminPage.click('#assignmentForm .dialog-actions .primary');await adminPage.waitForFunction(()=>!document.querySelector('#assignmentDialog').open);checks.push({test:'Admin fills previously unconfigured shift through UI',status:'PASS'});
+ const assigned=await call('Verify Admin UI assignment persisted','schedules','GET',null,200,tokens[0]);assert(assigned.some(r=>Number(r.ShiftId)===empty));
+ assert.equal(errors.length,0,errors.join('; '));checks.push({test:'No registration UI JavaScript errors',status:'PASS'});
+ fs.writeFileSync('test-results/weekly-registration.json',JSON.stringify({testedAt:new Date().toISOString(),database:'GymYogaHRM_Week5_Test',total:checks.length,checks},null,2));console.log(checks.length+' weekly registration API/UI checks PASS');
+})().catch(e=>{console.error(e.message);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();if(server)await new Promise(r=>server.close(r));const p=await poolPromise.catch(()=>null);if(p)await p.close();});

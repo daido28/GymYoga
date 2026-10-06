@@ -1,9 +1,15 @@
-const API_URL = "http://localhost:3000/api/employees";
+const API_URL = "/api/employees";
 const token = localStorage.getItem("token");
 
 const messageBox = document.getElementById("message");
 const employeeForm = document.getElementById("employeeForm");
 const employeeTableBody = document.getElementById("employeeTableBody");
+const formTitle = document.getElementById("formTitle");
+const submitButton = document.getElementById("submitButton");
+const cancelEditButton = document.getElementById("cancelEditButton");
+const searchInput = document.getElementById("searchInput");
+let employees = [];
+let editingEmployeeId = null;
 
 if (!token) {
   window.location.href = "index.html";
@@ -11,28 +17,34 @@ if (!token) {
 
 function showMessage(message, type = "success") {
   messageBox.innerHTML = `
-    <div class="alert alert-${type} alert-dismissible fade show">
+    <div class="alert alert-${type}">
       ${message}
-      <button class="btn-close" data-bs-dismiss="alert"></button>
     </div>
   `;
 }
 
-async function loadEmployees() {
-  try {
-    const response = await fetch(API_URL, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+function resetForm() {
+  editingEmployeeId = null;
+  employeeForm.reset();
+  formTitle.textContent = "Thêm nhân viên";
+  submitButton.textContent = "Thêm nhân viên";
+  cancelEditButton.hidden = true;
+}
 
-    const result = await response.json();
+function renderEmployees() {
+  employeeTableBody.innerHTML = employees.map((employee) => {
+    const statusButton = employee.UserId
+      ? `<span class="text-secondary small">Tài khoản hệ thống</span>`
+      : `
+        <button
+          class="btn btn-sm ${employee.IsActive ? "btn-outline-danger" : "btn-outline-success"}"
+          onclick="changeEmployeeStatus(${employee.EmployeeId}, ${!employee.IsActive})"
+        >
+          ${employee.IsActive ? "Ngừng hoạt động" : "Kích hoạt"}
+        </button>
+      `;
 
-    if (!response.ok) {
-      throw new Error(result.message);
-    }
-
-    employeeTableBody.innerHTML = result.data.map((employee) => `
+    return `
       <tr>
         <td>${employee.EmployeeId}</td>
         <td>${employee.FullName}</td>
@@ -44,12 +56,98 @@ async function loadEmployees() {
             ${employee.IsActive ? "Đang hoạt động" : "Ngừng hoạt động"}
           </span>
         </td>
+        <td class="d-flex gap-1">
+          <button
+            class="btn btn-sm btn-outline-primary"
+            onclick="editEmployee(${employee.EmployeeId})"
+          >
+            Sửa
+          </button>
+          ${statusButton}
+        </td>
       </tr>
-    `).join("");
+    `;
+  }).join("");
+}
+
+async function loadEmployees() {
+  try {
+    const search = searchInput.value.trim();
+
+    const response = await fetch(
+      `${API_URL}?search=${encodeURIComponent(search)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || result.message);
+    }
+
+    employees = result.data;
+    renderEmployees();
   } catch (error) {
     showMessage(error.message || "Không thể tải danh sách nhân viên", "danger");
   }
 }
+
+window.editEmployee = (employeeId) => {
+  const employee = employees.find(
+    (item) => Number(item.EmployeeId) === Number(employeeId)
+  );
+  if (!employee) {
+    return;
+  }
+
+  editingEmployeeId = employee.EmployeeId;
+
+  document.getElementById("fullName").value = employee.FullName || "";
+  document.getElementById("position").value = employee.Position || "";
+  document.getElementById("phone").value = employee.Phone || "";
+  document.getElementById("email").value = employee.Email || "";
+  document.getElementById("specialty").value = employee.Specialty || "";
+
+  formTitle.textContent = `Cập nhật nhân viên: ${employee.FullName}`;
+  submitButton.textContent = "Lưu thay đổi";
+  cancelEditButton.hidden = false;
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+window.changeEmployeeStatus = async (employeeId, isActive) => {
+  const action = isActive ? "kích hoạt" : "ngừng hoạt động";
+
+  if (!confirm(`Bạn có chắc muốn ${action} nhân viên này?`)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/${employeeId}/status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ isActive })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || result.message);
+    }
+
+    showMessage(result.message);
+    loadEmployees();
+  } catch (error) {
+    showMessage(error.message || "Không thể cập nhật trạng thái", "danger");
+  }
+};
 
 employeeForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -62,9 +160,13 @@ employeeForm.addEventListener("submit", async (event) => {
     specialty: document.getElementById("specialty").value.trim()
   };
 
+  const isEditing = editingEmployeeId !== null;
+  const url = isEditing ? `${API_URL}/${editingEmployeeId}` : API_URL;
+  const method = isEditing ? "PUT" : "POST";
+
   try {
-    const response = await fetch(API_URL, {
-      method: "POST",
+    const response = await fetch(url, {
+      method,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
@@ -75,15 +177,26 @@ employeeForm.addEventListener("submit", async (event) => {
     const result = await response.json();
 
     if (!response.ok) {
-        throw new Error(result.error || result.message);
+      throw new Error(result.error || result.message);
     }
 
     showMessage(result.message);
-    employeeForm.reset();
+    resetForm();
     loadEmployees();
   } catch (error) {
-    showMessage(error.message || "Không thể thêm nhân viên", "danger");
+    showMessage(error.message || "Không thể lưu nhân viên", "danger");
   }
 });
 
+cancelEditButton.addEventListener("click", resetForm);
+
+let searchTimeout;
+
+searchInput.addEventListener("input", () => {
+  clearTimeout(searchTimeout);
+
+  searchTimeout = setTimeout(() => {
+    loadEmployees();
+  }, 300);
+});
 loadEmployees();

@@ -1,0 +1,284 @@
+{
+  "testedAt": "2026-10-05T17:57:26.712Z",
+  "database": "GymYogaHRM_Week5_Test",
+  "total": 52,
+  "results": [
+    {
+      "test": "Create Quầy",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create Vệ sinh",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create Bảo vệ",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Invalid job color",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Create roster shift",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create target shift",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Admin may expand main shift",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Configure 1 to 2 per job",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Configure target requirements",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Capacity cannot be below sum minima",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Invalid min max rejected",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "test": "Create role employee 0",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create staff account 0",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Set allowed role 0",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create role employee 1",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create staff account 1",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Set allowed role 1",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create role employee 2",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create staff account 2",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Set allowed role 2",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create role employee 3",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create staff account 3",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Set allowed role 3",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Create role employee 4",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create staff account 4",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Set allowed role 4",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Staff cannot create jobs",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Staff cannot publish",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Reject wrong employee specialty",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Assign front desk",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Cannot publish missing cleaner and guard",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Assign cleaning",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Assign guard",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Publish complete role coverage",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Prevent cancellation causing shortage",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Prevent moving only guard",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Prevent rule edits on published future roster",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Prevent deactivating published employee",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Prevent deactivating published shift",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Staff requests leave",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Leave approval cannot remove only guard",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Reject leave remains possible",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Second front desk is allowed",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Third front desk rejected despite spare capacity",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Cannot remove assigned specialty",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Allow an additional qualified specialty",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Calendar returns roles and publication",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Recall publication",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Move guard after recall",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Draft shortage still cannot publish",
+      "status": "PASS",
+      "http": 409
+    },
+    {
+      "test": "Move guard back",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Republish restored roster",
+      "status": "PASS",
+      "http": 200
+    }
+  ],
+  "demo": {
+    "workDate": "2026-10-07",
+    "shiftId": 5,
+    "targetShiftId": 6,
+    "employees": [
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "jobs": [
+      5,
+      6,
+      7
+    ]
+  }
+}

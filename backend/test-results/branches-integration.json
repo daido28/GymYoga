@@ -1,0 +1,268 @@
+{
+  "testedAt": "2026-10-05T17:57:31.182Z",
+  "database": "GymYogaHRM_Week5_Test",
+  "total": 50,
+  "results": [
+    {
+      "test": "Admin lists current branches",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Admin creates second branch",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create manager profile in B",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Admin issues scoped branch manager",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Manager creates instructor profile in B",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Manager issues employee instructor account",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Manager sees only assigned branch",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Manager cannot switch to unassigned branch",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Forged Admin role claim cannot widen manager scope",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Staff cannot switch to another branch",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Create isolated employee in A",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create A employee account",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Create shift code in A",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Reuse shift code safely in B",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Read branch A catalog",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Read branch B catalog",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Manager employee list excludes A",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Manager shift list excludes A",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Cross-branch employee edit denied",
+      "status": "PASS",
+      "http": 404
+    },
+    {
+      "test": "Cross-branch employee status denied",
+      "status": "PASS",
+      "http": 404
+    },
+    {
+      "test": "Cross-branch shift edit denied",
+      "status": "PASS",
+      "http": 404
+    },
+    {
+      "test": "Cross-branch shift capacity denied",
+      "status": "PASS",
+      "http": 404
+    },
+    {
+      "test": "Cross-branch job edit denied",
+      "status": "PASS",
+      "http": 404
+    },
+    {
+      "test": "Cross-branch skill assignment denied",
+      "status": "PASS",
+      "http": 404
+    },
+    {
+      "test": "Manager cannot create branches",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Manager cannot rename branches",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Create unused profile for escalation tests",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Manager cannot issue system Admin",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Manager cannot issue another manager",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Configure instructor skill 1",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Configure instructor coverage 1",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Configure instructor skill 2",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Configure instructor coverage 2",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Cross-branch employee in assignment denied",
+      "status": "PASS",
+      "http": 404
+    },
+    {
+      "test": "Cross-branch shift in assignment denied",
+      "status": "PASS",
+      "http": 404
+    },
+    {
+      "test": "Assign instructor A",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Manager assigns instructor B",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Manager publishes own branch roster",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "B calendar excludes A schedules and jobs",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Legacy schedule list excludes A",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "B employee retains branch roster without contacts",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Cross-branch schedule cancellation denied",
+      "status": "PASS",
+      "http": 404
+    },
+    {
+      "test": "Cross-branch check-in denied",
+      "status": "PASS",
+      "http": 404
+    },
+    {
+      "test": "Staff A creates own leave",
+      "status": "PASS",
+      "http": 201
+    },
+    {
+      "test": "Manager B cannot review A leave",
+      "status": "PASS",
+      "http": 404
+    },
+    {
+      "test": "B request list excludes A requests",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Manager B sees branch attendance list",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Admin can rename B",
+      "status": "PASS",
+      "http": 200
+    },
+    {
+      "test": "Revoking branch access invalidates old token scope",
+      "status": "PASS",
+      "http": 403
+    },
+    {
+      "test": "Restored branch grant restores allowed scope",
+      "status": "PASS",
+      "http": 200
+    }
+  ],
+  "demo": {
+    "branchA": 1,
+    "branchB": 2,
+    "managerUserId": 11,
+    "staffUserId": 12,
+    "managerUsername": "manager_b_1791223047695",
+    "staffUsername": "hlv_b_1791223047695",
+    "workDate": "2026-10-07",
+    "shiftB": 8,
+    "scheduleB": 12
+  }
+}

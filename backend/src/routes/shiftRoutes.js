@@ -33,7 +33,7 @@ router.patch(
   "/:id/status",
   authenticateToken,
   authorizeRoles("Admin"),
-  updateShiftStatus
+  require('../controllers/jobController').shiftStatus
 );
 
 module.exports = router;

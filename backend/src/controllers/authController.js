@@ -118,7 +118,7 @@ const login = async (req, res) => {
 
     const token = jwt.sign(
       {
-        userId: user.UserId,
+        userId: Number(user.UserId),
         username: user.Username,
         role: user.RoleName
       },
@@ -130,7 +130,7 @@ const login = async (req, res) => {
       message: "Đăng nhập thành công",
       token,
       user: {
-        userId: user.UserId,
+        userId: Number(user.UserId),
         username: user.Username,
         fullName: user.FullName,
         role: user.RoleName

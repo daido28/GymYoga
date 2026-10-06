@@ -1,0 +1,19 @@
+{
+  "testedAt": "2026-10-05T17:57:53.433Z",
+  "browser": "Microsoft Edge headless",
+  "total": 11,
+  "status": "PASS",
+  "checks": [
+    "admin weekly roster renders role names",
+    "admin employee perspective works",
+    "Monthly calendar has 31 day cells",
+    "Assignment dialog filters employees by permitted job",
+    "Settings display employee permissions, capacity and per-job limits",
+    "Custom job creation through UI succeeds",
+    "Mobile page fits viewport with calendar scrolling inside",
+    "staff weekly roster renders role names",
+    "staff employee perspective works",
+    "Staff has own actions and no admin controls",
+    "No browser JavaScript errors"
+  ]
+}

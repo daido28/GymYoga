@@ -1,10 +1,17 @@
+const shiftTime=require('../services/shiftTime');
 const { sql, poolPromise } = require("../config/db");
 
 const getSchedules = async (req, res) => {
+  const { role, userId } = req.user || {};
+  if (!["Admin", "Nhân viên", "Quản lý chi nhánh"].includes(role) || !Number.isInteger(userId) || userId <= 0) {
+    return res.status(403).json({ message: "Bạn không có quyền xem lịch phân công" });
+  }
   try {
     const pool = await poolPromise;
-
-    const result = await pool.request().query(`
+    const request = pool.request().input("branch", sql.Int, req.branchId);
+    const ownScheduleOnly = role === "Nhân viên";
+    if (ownScheduleOnly) request.input("userId", sql.Int, userId);
+    const result = await request.query(`
       SELECT
         ws.ScheduleId,
         ws.WorkDate,
@@ -20,6 +27,7 @@ const getSchedules = async (req, res) => {
       FROM WorkSchedules ws
       INNER JOIN Employees e ON ws.EmployeeId = e.EmployeeId
       INNER JOIN Shifts s ON ws.ShiftId = s.ShiftId
+      ${ownScheduleOnly ? "WHERE e.UserId = @userId AND e.BranchId=@branch" : "WHERE e.BranchId=@branch"}
       ORDER BY ws.WorkDate DESC, s.StartTime
     `);
 
@@ -86,8 +94,7 @@ const assignSchedule = async (req, res) => {
         INNER JOIN Shifts newShift ON newShift.ShiftId = @shiftId
         WHERE ws.EmployeeId = @employeeId
           AND ws.WorkDate = @workDate
-          AND newShift.StartTime < existingShift.EndTime
-          AND newShift.EndTime > existingShift.StartTime
+          AND ${shiftTime.overlap('newShift.StartTime','newShift.EndTime','existingShift.StartTime','existingShift.EndTime')}
       `);
 
     if (conflictResult.recordset.length > 0) {
@@ -178,8 +185,7 @@ const updateSchedule = async (req, res) => {
         WHERE ws.EmployeeId = @employeeId
           AND ws.WorkDate = @workDate
           AND ws.ScheduleId <> @scheduleId
-          AND newShift.StartTime < existingShift.EndTime
-          AND newShift.EndTime > existingShift.StartTime
+          AND ${shiftTime.overlap('newShift.StartTime','newShift.EndTime','existingShift.StartTime','existingShift.EndTime')}
       `);
 
     if (conflictResult.recordset.length > 0) {

@@ -1,0 +1,11 @@
+{
+  "testedAt": "2026-10-05T14:23:16.719Z",
+  "browser": "Microsoft Edge headless",
+  "checks": [
+    "Admin weekly calendar renders",
+    "Admin monthly calendar renders",
+    "Staff personal actions render",
+    "No browser JavaScript errors"
+  ],
+  "status": "PASS"
+}

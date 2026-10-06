@@ -22,14 +22,14 @@
   <main class="container py-4">
     <h1 class="h2 mb-1">Phân công lịch làm</h1>
     <p class="text-secondary mb-4">
-      Phân ca cho nhân viên và tự động cảnh báo trùng thời gian.
+      Lập, sửa hoặc hủy phân công ca cho nhân viên.
     </p>
 
     <div id="message"></div>
 
     <div class="card shadow-sm mb-4">
       <div class="card-body">
-        <h2 class="h5 mb-3">Tạo phân công</h2>
+        <h2 id="formTitle" class="h5 mb-3">Tạo phân công</h2>
 
         <form id="scheduleForm" class="row g-3">
           <div class="col-md-4">
@@ -53,11 +53,17 @@
 
           <div class="col-md-2">
             <label for="note" class="form-label">Ghi chú</label>
-            <input id="note" class="form-control" placeholder="Tùy chọn">
+            <input id="note" class="form-control">
           </div>
 
           <div class="col-12">
-            <button class="btn btn-primary" type="submit">Phân công ca</button>
+            <button id="submitButton" class="btn btn-primary" type="submit">
+              Phân công ca
+            </button>
+
+            <button id="cancelEditButton" class="btn btn-secondary ms-2" type="button" hidden>
+              Hủy chỉnh sửa
+            </button>
           </div>
         </form>
       </div>
@@ -77,6 +83,7 @@
                 <th>Thời gian</th>
                 <th>Trạng thái</th>
                 <th>Ghi chú</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody id="scheduleTableBody"></tbody>
@@ -86,6 +93,6 @@
     </div>
   </main>
 
-  <script src="schedules.js"></script>
+  <script src="branch-context.js"></script><script src="schedules.js"></script>
 </body>
 </html>

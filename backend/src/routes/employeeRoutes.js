@@ -13,7 +13,7 @@ const {
   authorizeRoles
 } = require("../middlewares/authMiddleware");
 
-router.get("/", authenticateToken, getEmployees);
+router.get("/", authenticateToken, authorizeRoles("Admin"), getEmployees);
 
 router.post(
   "/",
@@ -33,7 +33,7 @@ router.patch(
   "/:id/status",
   authenticateToken,
   authorizeRoles("Admin"),
-  updateEmployeeStatus
+  require('../controllers/jobController').employeeStatus
 );
 
 module.exports = router;

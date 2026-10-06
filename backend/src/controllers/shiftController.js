@@ -1,12 +1,14 @@
+const shiftTime=require('../services/shiftTime');
 const { sql, poolPromise } = require("../config/db");
 
 const getShifts = async (req, res) => {
   try {
     const pool = await poolPromise;
 
-    const result = await pool.request().query(`
-      SELECT ShiftId, ShiftCode, ShiftName, StartTime, EndTime, IsActive
+    const result = await pool.request().input("branch", sql.Int, req.branchId).query(`
+      SELECT ShiftId, ShiftCode, ShiftName, StartTime, EndTime, IsActive, Capacity, IsSupport
       FROM Shifts
+      WHERE BranchId=@branch
       ORDER BY StartTime
     `);
 
@@ -32,23 +34,23 @@ const createShift = async (req, res) => {
       });
     }
 
-    if (startTime >= endTime) {
+    try { shiftTime.validate(startTime,endTime); } catch(error) {
       return res.status(400).json({
-        message: "Giờ kết thúc phải sau giờ bắt đầu"
+        message: error.message
       });
     }
 
     const pool = await poolPromise;
 
-    const result = await pool.request()
+    const result = await pool.request().input("branch", sql.Int, req.branchId)
       .input("shiftCode", sql.NVarChar, shiftCode)
       .input("shiftName", sql.NVarChar, shiftName)
       .input("startTime", sql.Time, startTime)
       .input("endTime", sql.Time, endTime)
       .query(`
-        INSERT INTO Shifts (ShiftCode, ShiftName, StartTime, EndTime)
+        INSERT INTO Shifts (ShiftCode, ShiftName, StartTime, EndTime, BranchId)
         OUTPUT INSERTED.ShiftId, INSERTED.ShiftCode, INSERTED.ShiftName
-        VALUES (@shiftCode, @shiftName, @startTime, @endTime)
+        VALUES (@shiftCode, @shiftName, @startTime, @endTime, @branch)
       `);
 
     res.status(201).json({
@@ -74,15 +76,39 @@ const updateShift = async (req, res) => {
       });
     }
 
-    if (startTime >= endTime) {
+    try { shiftTime.validate(startTime,endTime); } catch(error) {
       return res.status(400).json({
-        message: "Giờ kết thúc phải sau giờ bắt đầu"
+        message: error.message
       });
     }
 
     const pool = await poolPromise;
 
-    const result = await pool.request()
+const conflictResult = await pool.request().input("branch", sql.Int, req.branchId)
+  .input("shiftId", sql.Int, shiftId)
+  .input("startTime", sql.Time, startTime)
+  .input("endTime", sql.Time, endTime)
+  .query(`
+    SELECT TOP 1 editedSchedule.ScheduleId
+    FROM WorkSchedules editedSchedule
+    INNER JOIN WorkSchedules existingSchedule
+      ON editedSchedule.EmployeeId = existingSchedule.EmployeeId
+      AND editedSchedule.WorkDate = existingSchedule.WorkDate
+      AND editedSchedule.ScheduleId <> existingSchedule.ScheduleId
+    INNER JOIN Shifts existingShift
+      ON existingSchedule.ShiftId = existingShift.ShiftId
+    WHERE editedSchedule.ShiftId = @shiftId
+      AND editedSchedule.Status<>N'Đã hủy' AND existingSchedule.Status<>N'Đã hủy'
+      AND ${shiftTime.overlap('@startTime','@endTime','existingShift.StartTime','existingShift.EndTime')}
+      `);
+
+    if (conflictResult.recordset.length > 0) {
+      return res.status(400).json({
+        message: "Không thể sửa giờ ca vì sẽ làm trùng lịch đã phân công"
+      });
+    }
+
+    const result = await pool.request().input("branch", sql.Int, req.branchId)
       .input("shiftId", sql.Int, shiftId)
       .input("shiftCode", sql.NVarChar, shiftCode)
       .input("shiftName", sql.NVarChar, shiftName)
@@ -94,7 +120,7 @@ const updateShift = async (req, res) => {
             ShiftName = @shiftName,
             StartTime = @startTime,
             EndTime = @endTime
-        WHERE ShiftId = @shiftId
+        WHERE ShiftId = @shiftId AND BranchId=@branch
       `);
 
     if (result.rowsAffected[0] === 0) {
@@ -125,13 +151,13 @@ const updateShiftStatus = async (req, res) => {
 
     const pool = await poolPromise;
 
-    const result = await pool.request()
+    const result = await pool.request().input("branch", sql.Int, req.branchId)
       .input("shiftId", sql.Int, shiftId)
       .input("isActive", sql.Bit, isActive)
       .query(`
         UPDATE Shifts
         SET IsActive = @isActive
-        WHERE ShiftId = @shiftId
+        WHERE ShiftId = @shiftId AND BranchId=@branch
       `);
 
     if (result.rowsAffected[0] === 0) {

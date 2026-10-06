@@ -1,0 +1,22 @@
+{
+  "testedAt": "2026-10-05T17:58:10.882Z",
+  "browser": "Microsoft Edge headless",
+  "total": 14,
+  "status": "PASS",
+  "checks": [
+    "admin real login lands directly on calendar",
+    "Admin branch switch reloads scoped workspace",
+    "Admin creates scoped manager through UI and linked profile disappears",
+    "manager real login lands directly on calendar",
+    "Manager sees only assigned branch",
+    "Manager cannot select elevated account or edit branches",
+    "Manager can issue ordinary instructor account through UI",
+    "staff real login lands directly on calendar",
+    "Staff menu excludes employee and shift management",
+    "Staff sees only own branch",
+    "Instructor reaches own check-in and requests from main menu",
+    "Old dashboard link redirects to calendar",
+    "Branch selector and staff menu fit mobile viewport",
+    "No JavaScript errors in login and branch/account UI"
+  ]
+}
