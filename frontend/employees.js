@@ -1,202 +1,22 @@
-const API_URL = "/api/employees";
-const token = localStorage.getItem("token");
-
-const messageBox = document.getElementById("message");
-const employeeForm = document.getElementById("employeeForm");
-const employeeTableBody = document.getElementById("employeeTableBody");
-const formTitle = document.getElementById("formTitle");
-const submitButton = document.getElementById("submitButton");
-const cancelEditButton = document.getElementById("cancelEditButton");
-const searchInput = document.getElementById("searchInput");
-let employees = [];
-let editingEmployeeId = null;
-
-if (!token) {
-  window.location.href = "index.html";
+const API_URL='/api/employees',token=localStorage.getItem('token');
+const $=id=>document.getElementById(id),form=$('employeeForm'),tableBody=$('employeeTableBody'),messageBox=$('message');
+let employees=[],editingEmployeeId=null,searchTimer;
+if(!token)location.replace('index.html');
+function showMessage(text,type='success'){messageBox.hidden=false;messageBox.textContent=text;messageBox.className='notice'+(type==='danger'?' error':'');}
+function el(tag,text,className){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(className)node.className=className;return node;}
+function resetForm(){editingEmployeeId=null;form.reset();$('formTitle').textContent='Thêm nhân viên';$('submitButton').textContent='Thêm nhân viên';$('cancelEditButton').hidden=true;}
+function filteredEmployees(){const search=$('searchInput').value.trim().toLocaleLowerCase('vi'),status=$('statusFilter').value;return employees.filter(employee=>{const haystack=[employee.FullName,employee.Phone,employee.Email,employee.Position,employee.Specialty].filter(Boolean).join(' ').toLocaleLowerCase('vi');return (!search||haystack.includes(search))&&(status==='all'||status==='account'?status!=='account'||employee.UserId:Boolean(employee.IsActive)===(status==='active'));});}
+function renderEmployees(){
+ $('totalEmployees').textContent=employees.length;$('activeEmployees').textContent=employees.filter(e=>e.IsActive).length;$('inactiveEmployees').textContent=employees.filter(e=>!e.IsActive).length;$('accountEmployees').textContent=employees.filter(e=>e.UserId).length;
+ tableBody.replaceChildren();const rows=filteredEmployees();if(!rows.length){const row=el('tr'),cell=el('td','Chưa có hồ sơ phù hợp.','empty-row');cell.colSpan=5;row.append(cell);tableBody.append(row);return;}
+ for(const employee of rows){const row=el('tr'),identity=el('td'),contact=el('td'),specialty=el('td'),status=el('td'),actions=el('td');identity.append(el('strong',employee.FullName),el('small',`${employee.Position} · Mã NV ${employee.EmployeeId}`));contact.append(el('span',employee.Phone||'Chưa có số điện thoại'),el('small',employee.Email||'Chưa có email'));specialty.append(el('span',employee.Specialty||'Chưa cập nhật'));
+  const badge=el('span',employee.IsActive?'Đang hoạt động':'Ngừng hoạt động','status-pill'+(employee.IsActive?'':' inactive'));status.append(badge);if(employee.UserId)status.append(el('span','Đã liên kết tài khoản','account-note'));
+  const edit=el('button','Sửa','button');edit.type='button';edit.onclick=()=>editEmployee(employee.EmployeeId);actions.append(edit);if(employee.UserId)actions.append(el('span','Quản lý qua tài khoản','account-note'));else{const toggle=el('button',employee.IsActive?'Ngừng hoạt động':'Kích hoạt','button');toggle.type='button';toggle.onclick=()=>changeEmployeeStatus(employee.EmployeeId,!employee.IsActive);actions.append(toggle);}row.append(identity,contact,specialty,status,actions);tableBody.append(row);
+ }
 }
-
-function showMessage(message, type = "success") {
-  messageBox.innerHTML = `
-    <div class="alert alert-${type}">
-      ${message}
-    </div>
-  `;
-}
-
-function resetForm() {
-  editingEmployeeId = null;
-  employeeForm.reset();
-  formTitle.textContent = "Thêm nhân viên";
-  submitButton.textContent = "Thêm nhân viên";
-  cancelEditButton.hidden = true;
-}
-
-function renderEmployees() {
-  employeeTableBody.innerHTML = employees.map((employee) => {
-    const statusButton = employee.UserId
-      ? `<span class="text-secondary small">Tài khoản hệ thống</span>`
-      : `
-        <button
-          class="btn btn-sm ${employee.IsActive ? "btn-outline-danger" : "btn-outline-success"}"
-          onclick="changeEmployeeStatus(${employee.EmployeeId}, ${!employee.IsActive})"
-        >
-          ${employee.IsActive ? "Ngừng hoạt động" : "Kích hoạt"}
-        </button>
-      `;
-
-    return `
-      <tr>
-        <td>${employee.EmployeeId}</td>
-        <td>${employee.FullName}</td>
-        <td>${employee.Position}</td>
-        <td>${employee.Phone || ""}</td>
-        <td>${employee.Email || ""}</td>
-        <td>
-          <span class="badge ${employee.IsActive ? "text-bg-success" : "text-bg-secondary"}">
-            ${employee.IsActive ? "Đang hoạt động" : "Ngừng hoạt động"}
-          </span>
-        </td>
-        <td class="d-flex gap-1">
-          <button
-            class="btn btn-sm btn-outline-primary"
-            onclick="editEmployee(${employee.EmployeeId})"
-          >
-            Sửa
-          </button>
-          ${statusButton}
-        </td>
-      </tr>
-    `;
-  }).join("");
-}
-
-async function loadEmployees() {
-  try {
-    const search = searchInput.value.trim();
-
-    const response = await fetch(
-      `${API_URL}?search=${encodeURIComponent(search)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || result.message);
-    }
-
-    employees = result.data;
-    renderEmployees();
-  } catch (error) {
-    showMessage(error.message || "Không thể tải danh sách nhân viên", "danger");
-  }
-}
-
-window.editEmployee = (employeeId) => {
-  const employee = employees.find(
-    (item) => Number(item.EmployeeId) === Number(employeeId)
-  );
-  if (!employee) {
-    return;
-  }
-
-  editingEmployeeId = employee.EmployeeId;
-
-  document.getElementById("fullName").value = employee.FullName || "";
-  document.getElementById("position").value = employee.Position || "";
-  document.getElementById("phone").value = employee.Phone || "";
-  document.getElementById("email").value = employee.Email || "";
-  document.getElementById("specialty").value = employee.Specialty || "";
-
-  formTitle.textContent = `Cập nhật nhân viên: ${employee.FullName}`;
-  submitButton.textContent = "Lưu thay đổi";
-  cancelEditButton.hidden = false;
-
-  window.scrollTo({ top: 0, behavior: "smooth" });
-};
-
-window.changeEmployeeStatus = async (employeeId, isActive) => {
-  const action = isActive ? "kích hoạt" : "ngừng hoạt động";
-
-  if (!confirm(`Bạn có chắc muốn ${action} nhân viên này?`)) {
-    return;
-  }
-
-  try {
-    const response = await fetch(`${API_URL}/${employeeId}/status`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ isActive })
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || result.message);
-    }
-
-    showMessage(result.message);
-    loadEmployees();
-  } catch (error) {
-    showMessage(error.message || "Không thể cập nhật trạng thái", "danger");
-  }
-};
-
-employeeForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const data = {
-    fullName: document.getElementById("fullName").value.trim(),
-    position: document.getElementById("position").value.trim(),
-    phone: document.getElementById("phone").value.trim(),
-    email: document.getElementById("email").value.trim(),
-    specialty: document.getElementById("specialty").value.trim()
-  };
-
-  const isEditing = editingEmployeeId !== null;
-  const url = isEditing ? `${API_URL}/${editingEmployeeId}` : API_URL;
-  const method = isEditing ? "PUT" : "POST";
-
-  try {
-    const response = await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || result.message);
-    }
-
-    showMessage(result.message);
-    resetForm();
-    loadEmployees();
-  } catch (error) {
-    showMessage(error.message || "Không thể lưu nhân viên", "danger");
-  }
-});
-
-cancelEditButton.addEventListener("click", resetForm);
-
-let searchTimeout;
-
-searchInput.addEventListener("input", () => {
-  clearTimeout(searchTimeout);
-
-  searchTimeout = setTimeout(() => {
-    loadEmployees();
-  }, 300);
-});
-loadEmployees();
+async function loadEmployees(){try{const response=await fetch(API_URL,{headers:{Authorization:`Bearer ${token}`}}),result=await response.json();if(!response.ok)throw Error(result.error||result.message);employees=result.data;renderEmployees();}catch(error){showMessage(error.message||'Không thể tải danh sách nhân viên','danger');}}
+function editEmployee(employeeId){const employee=employees.find(item=>Number(item.EmployeeId)===Number(employeeId));if(!employee)return;editingEmployeeId=employee.EmployeeId;$('fullName').value=employee.FullName||'';$('position').value=employee.Position||'';$('phone').value=employee.Phone||'';$('email').value=employee.Email||'';$('specialty').value=employee.Specialty||'';$('formTitle').textContent=`Cập nhật nhân viên: ${employee.FullName}`;$('submitButton').textContent='Lưu thay đổi';$('cancelEditButton').hidden=false;window.scrollTo({top:0,behavior:'smooth'});}
+async function changeEmployeeStatus(employeeId,isActive){const actionName=isActive?'kích hoạt':'ngừng hoạt động';if(!confirm(`Bạn có chắc muốn ${actionName} nhân viên này?`))return;try{const response=await fetch(`${API_URL}/${employeeId}/status`,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({isActive})}),result=await response.json();if(!response.ok)throw Error(result.error||result.message);showMessage(result.message);await loadEmployees();}catch(error){showMessage(error.message||'Không thể cập nhật trạng thái nhân viên','danger');}}
+form.onsubmit=async event=>{event.preventDefault();const data={fullName:$('fullName').value.trim(),position:$('position').value.trim(),phone:$('phone').value.trim(),email:$('email').value.trim(),specialty:$('specialty').value.trim()},editing=editingEmployeeId!==null;try{const response=await fetch(editing?`${API_URL}/${editingEmployeeId}`:API_URL,{method:editing?'PUT':'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify(data)}),result=await response.json();if(!response.ok)throw Error(result.error||result.message);showMessage(result.message);resetForm();await loadEmployees();}catch(error){showMessage(error.message||'Không thể lưu nhân viên','danger');}};
+async function init(){try{const response=await fetch('/api/auth/me',{headers:{Authorization:`Bearer ${token}`}}),body=await response.json();if(!response.ok)throw Error(body.message);if(!['Admin','Quản lý chi nhánh'].includes(body.user.role)){location.replace('week5.html');return;}let storedUser;try{storedUser=JSON.parse(localStorage.getItem('user'));}catch{}$('userName').textContent=storedUser?.fullName||body.user.username;$('avatar').textContent=(storedUser?.fullName||'G').slice(0,1);const branchResponse=await fetch('/api/week5/branches',{headers:{Authorization:`Bearer ${token}`}}),branchBody=await branchResponse.json();if(!branchResponse.ok)throw Error(branchBody.message);for(const branch of branchBody.data.branches){const option=el('option',branch.BranchName);option.value=branch.BranchId;$('branchSelect').append(option);}$('branchSelect').value=branchBody.data.selectedBranchId;$('branchSelect').disabled=branchBody.data.branches.length<2;localStorage.setItem('branchId',branchBody.data.selectedBranchId);await loadEmployees();}catch(error){showMessage(error.message,'danger');}}
+$('cancelEditButton').onclick=resetForm;$('searchInput').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(renderEmployees,180);};$('statusFilter').onchange=renderEmployees;$('branchSelect').onchange=event=>{localStorage.setItem('branchId',event.target.value);location.reload();};$('logout').onclick=()=>{for(const key of ['user','token','branchId'])localStorage.removeItem(key);location.replace('index.html');};init();
