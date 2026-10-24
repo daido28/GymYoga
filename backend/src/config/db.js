@@ -3,6 +3,8 @@ const sql = require("mssql/msnodesqlv8");
 const config = {
   server: process.env.DB_SERVER,
   database: process.env.DB_DATABASE,
+  connectionTimeout: Number(process.env.DB_CONNECTION_TIMEOUT_MS || 5000),
+  requestTimeout: Number(process.env.DB_REQUEST_TIMEOUT_MS || 15000),
   options: {
     trustedConnection: true,
     trustServerCertificate: true

@@ -29,5 +29,10 @@ Mở http://localhost:3000/week5.html sau khi đăng nhập. Database hiện t�
 - `backend/test-results`: JSON và ba ảnh thật của lần kiểm thử. Tên “Nhân viên thử” là dữ liệu giả phục vụ test; không phải thành viên nhóm đã vận hành sản phẩm.
 - `database/week5_test_reset.sql` xóa và tạo lại bảng chỉ trong database thử. Không dùng script đó với database thật.
 
-## Còn cần hoàn thiện
-FR09 thống kê nghiệp vụ; UAT của nhóm; kiểm tra hiệu năng theo Scope; Jira >=50 issue thật, push GitHub, Notion; MSSV và số liệu công/chi phí/đánh giá có nguồn. Không lấy EVM/Pareto mô phỏng làm số thực. Lịch đã hủy của đúng nhân viên/ca/ngày chưa được tái phân công do unique key hiện có; chọn ca/ngày khác hoặc bổ sung luồng phục hồi có kiểm soát trong phiên bản sau.
+## Báo cáo FR09
+
+Admin hoặc quản lý chi nhánh mở **Báo cáo vận hành** trên `week5.html`, chọn kỳ tối đa 93 ngày và có thể xuất CSV. Chỉ số và dữ liệu nguồn được mô tả trong [FR09_BAO_CAO.md](FR09_BAO_CAO.md).
+
+## Việc cần thu thập khi nộp học phần
+
+UAT của nhóm; kiểm tra hiệu năng theo Scope; Jira >=50 issue thật, push GitHub, Notion; MSSV và số liệu công/chi phí/đánh giá có nguồn. Không lấy EVM/Pareto mô phỏng làm số thực. Lịch đã hủy của đúng nhân viên/ca/ngày chưa được tái phân công do unique key hiện có; chọn ca/ngày khác hoặc bổ sung luồng phục hồi có kiểm soát trong phiên bản sau.

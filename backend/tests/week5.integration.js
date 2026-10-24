@@ -2,9 +2,10 @@
 process.env.DB_DATABASE='GymYogaHRM_Week5_Test';process.env.PORT='3105';process.env.SEED_ADMIN_ENABLED='true';process.env.JWT_SECRET=require('crypto').randomBytes(32).toString('hex');
 require('dotenv').config();
 const assert=require('node:assert/strict'),fs=require('node:fs'),app=require('../src/server'),{poolPromise}=require('../src/config/db');
-const results=[];let server;
+const results=[];let server,pool;
+const connectionDeadline=new Promise((_,reject)=>setTimeout(()=>reject(Error('Không kết nối được database GymYogaHRM_Week5_Test trong 10 giây. Kiểm tra SQL Server, DB_SERVER và database thử.')),10000));
 async function run(){
- const pool=await poolPromise;assert.equal((await pool.request().query('SELECT DB_NAME() AS Name')).recordset[0].Name,'GymYogaHRM_Week5_Test');
+ pool=await Promise.race([poolPromise,connectionDeadline]);assert.equal((await pool.request().query('SELECT DB_NAME() AS Name')).recordset[0].Name,'GymYogaHRM_Week5_Test');
  server=app.listen(3105);const day=(await pool.request().query('SELECT CONVERT(varchar(10),GETDATE(),23) AS Day')).recordset[0].Day;
  const password=require('crypto').randomBytes(16).toString('hex');
  async function call(label,path,method,body,token,expected){const r=await fetch('http://localhost:3105/api/'+path,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});const b=await r.json();assert.equal(r.status,expected,`${label}: ${b.message}`);results.push({test:label,status:'PASS',http:r.status});return b;}
@@ -20,6 +21,9 @@ async function run(){
  for(let i=0;i<3;i++)schedules.push((await call('Assign morning '+i,'schedules','POST',{employeeId:ids[i],shiftId:sang,workDate:day},admin,201)).data.ScheduleId);
  await call('Fourth employee blocked at capacity 3','schedules','POST',{employeeId:ids[3],shiftId:sang,workDate:day},admin,409);
  const cal=await call('Calendar shows team names','week5/calendar?start='+day+'&end='+day,'GET',null,tokens[0],200);assert.equal(cal.data.schedules.length,3);assert.equal(cal.data.shifts.find(s=>s.ShiftId===sang).Capacity,3);
+ const report=await call('Admin report summarizes schedules','week5/reports?start='+day+'&end='+day,'GET',null,admin,200);assert.equal(Number(report.data.summary.Scheduled),3);assert.equal(report.data.daily.length,1);assert.equal(report.data.schedules.length,3);
+ await call('Staff cannot view report','week5/reports?start='+day+'&end='+day,'GET',null,tokens[0],403);
+ await call('Invalid report range rejected','week5/reports?start=2026-01-01&end=2026-12-31','GET',null,admin,400);
  const own=await call('Personal schedule filtered','schedules?userId=999','GET',null,tokens[0],200);assert.equal(own.data.length,1);assert.equal(Number(own.data[0].EmployeeId),ids[0]);
  await call('Other employee cannot check in','week5/attendance/check-in','POST',{scheduleId:schedules[0]},tokens[1],403);
  await call('Check in own schedule','week5/attendance/check-in','POST',{scheduleId:schedules[0]},tokens[0],201);
@@ -55,4 +59,4 @@ async function run(){
  const concurrent=await Promise.all([fetch('http://localhost:3105/api/week5/attendance/check-in',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tokens[1]},body:JSON.stringify({scheduleId:afternoon1})}),fetch('http://localhost:3105/api/week5/attendance/check-in',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tokens[1]},body:JSON.stringify({scheduleId:afternoon1})})]);assert.deepEqual(concurrent.map(r=>r.status).sort(),[201,409]);results.push({test:'Concurrent check-ins create exactly one attendance',status:'PASS'});
  fs.mkdirSync('test-results',{recursive:true});fs.writeFileSync('test-results/week5-integration.json',JSON.stringify({database:'GymYogaHRM_Week5_Test',testedAt:new Date().toISOString(),total:results.length,results},null,2));console.log(`${results.length} integration checks PASS against isolated SQL Server database`);
 }
-run().catch(e=>{console.error(e.message);process.exitCode=1;}).finally(async()=>{if(server)await new Promise(r=>server.close(r));const pool=await poolPromise.catch(()=>null);if(pool)await pool.close();});
+run().catch(e=>{console.error(e.message);process.exitCode=1;}).finally(async()=>{if(server)await new Promise(r=>server.close(r));if(pool)await pool.close();if(!pool)process.exit(1);});
